@@ -1,0 +1,16 @@
+.DS_Store
+/.build/
+/dist/
+/*.xcodeproj/
+xcuserdata/
+*.xcuserstate
+*.log
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.cer
+.swiftpm/configuration/
+Application Support/
+.swiftpm/xcode/package.xcworkspace/xcuserdata/
