@@ -30,16 +30,16 @@ jobs:
       - name: Build app bundle
         run: ./Scripts/build-app-bundle.sh
 
+      - name: Install create-dmg
+        run: brew install create-dmg
+
       - name: Package DMG
         run: |
           version="${GITHUB_REF_NAME#v}"
           if [ "$GITHUB_REF_NAME" = "$version" ]; then
             version="dev-${GITHUB_SHA::7}"
           fi
-          mkdir dmg-staging
-          cp -R dist/Meetco.app dmg-staging/
-          ln -s /Applications dmg-staging/Applications
-          hdiutil create -volname "Meetco" -srcfolder dmg-staging -ov -format UDZO "Meetco-${version}.dmg"
+          ./Scripts/build-dmg.sh "$version"
           shasum -a 256 Meetco-*.dmg > checksums.txt
           cat checksums.txt
 
