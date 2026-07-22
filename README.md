@@ -18,6 +18,8 @@
   <img src="https://img.shields.io/badge/storage-local--first-6E62E5" alt="Local-first" />
   <img src="https://img.shields.io/badge/account-not%20required-2ea44f" alt="No account required" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License" /></a>
+  <a href="https://github.com/lequocbinh04/meetco/actions/workflows/release-dmg.yml"><img src="https://github.com/lequocbinh04/meetco/actions/workflows/release-dmg.yml/badge.svg" alt="Release DMG" /></a>
+  <a href="https://github.com/lequocbinh04/meetco/releases/latest"><img src="https://img.shields.io/github/v/release/lequocbinh04/meetco?color=6E62E5" alt="Latest release" /></a>
 </p>
 
 <p align="center">
@@ -49,6 +51,10 @@ Most meeting recorders upload your audio to someone else's cloud before you ever
 | <img src="docs/assets/screenshot-settings.png" alt="Settings with provider health" width="640" /> |
 
 ## Getting started
+
+### Install from a release
+
+Grab the latest `Meetco-*.dmg` from [Releases](https://github.com/lequocbinh04/meetco/releases/latest), drag **Meetco** into *Applications*, and open it. Builds are ad-hoc signed (not notarized), so on first launch right-click the app → *Open*, or allow it under *System Settings → Privacy &amp; Security*. Release DMGs are built for Apple Silicon.
 
 ### Requirements
 

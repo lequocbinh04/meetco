@@ -1,0 +1,62 @@
+name: Release DMG
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-dmg:
+    name: Build and package Meetco.dmg
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Verify build and checks
+        run: |
+          swift build -debug-info-format none
+          swift run -debug-info-format none MeetcoChecks
+
+      - name: Build app bundle
+        run: ./Scripts/build-app-bundle.sh
+
+      - name: Package DMG
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [ "$GITHUB_REF_NAME" = "$version" ]; then
+            version="dev-${GITHUB_SHA::7}"
+          fi
+          mkdir dmg-staging
+          cp -R dist/Meetco.app dmg-staging/
+          ln -s /Applications dmg-staging/Applications
+          hdiutil create -volname "Meetco" -srcfolder dmg-staging -ov -format UDZO "Meetco-${version}.dmg"
+          shasum -a 256 Meetco-*.dmg > checksums.txt
+          cat checksums.txt
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            Meetco-*.dmg
+            checksums.txt
+          generate_release_notes: true
+
+      - name: Upload artifact (manual run)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: meetco-dmg
+          path: |
+            Meetco-*.dmg
+            checksums.txt
