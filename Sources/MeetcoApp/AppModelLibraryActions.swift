@@ -92,18 +92,27 @@ extension AppModel {
     }
 
     func deleteSelectedMeeting() {
-        guard let dependencies, let selectedMeetingID else { return }
-        cancelSelectedAgentTask()
-        cancelSelectedTranscriptRetry()
+        guard let selectedMeetingID else { return }
+        deleteMeeting(id: selectedMeetingID)
+    }
+
+    func deleteMeeting(id: UUID) {
+        guard let dependencies else { return }
+        if id == selectedMeetingID {
+            cancelSelectedAgentTask()
+            cancelSelectedTranscriptRetry()
+        }
         Task {
             do {
                 if let snapshot = try? SnapshotExporter.load(from: dependencies.paths.liveSnapshotURL),
-                   snapshot.meeting.id == selectedMeetingID {
-                    try? await dependencies.snapshotExporter.disable(meetingID: selectedMeetingID)
+                   snapshot.meeting.id == id {
+                    try? await dependencies.snapshotExporter.disable(meetingID: id)
                 }
-                try await dependencies.repository.deleteMeeting(id: selectedMeetingID)
-                self.selectedMeetingID = nil
-                selectedMeeting = nil
+                try await dependencies.repository.deleteMeeting(id: id)
+                if selectedMeetingID == id {
+                    selectedMeetingID = nil
+                    selectedMeeting = nil
+                }
                 await refreshMeetings()
             } catch {
                 startupError = error.localizedDescription

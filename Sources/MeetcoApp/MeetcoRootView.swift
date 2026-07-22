@@ -21,7 +21,10 @@ struct MeetcoRootView: View {
             isPresented: deletionConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Delete Meeting", role: .destructive) { model.deleteSelectedMeeting() }
+            Button("Delete Meeting", role: .destructive) {
+                if let id = meetingPendingDeletion { model.deleteMeeting(id: id) }
+                meetingPendingDeletion = nil
+            }
             Button("Cancel", role: .cancel) { meetingPendingDeletion = nil }
         } message: {
             Text("This permanently removes its local transcript, artifacts, notes, and retained audio.")
@@ -75,9 +78,13 @@ struct MeetcoRootView: View {
                 HSplitView {
                     meetingList
                         .frame(minWidth: 280, idealWidth: 340, maxWidth: 430)
+                        .frame(maxHeight: .infinity)
                     meetingDetail
-                        .frame(minWidth: 540)
+                        .frame(minWidth: 540, maxWidth: .infinity, maxHeight: .infinity)
                 }
+                // HSplitView sizes to fit its children unless pinned to the
+                // proposed size, which leaves the library floating top-left.
+                .frame(width: proxy.size.width, height: proxy.size.height)
             } else if model.selectedMeeting != nil {
                 meetingDetail
                     .toolbar {
@@ -97,7 +104,8 @@ struct MeetcoRootView: View {
         MeetingListView(
             state: MeetcoViewStateFactory.meetingList(model),
             onSelect: model.selectMeeting,
-            onNewRecording: model.presentPreflight
+            onNewRecording: model.presentPreflight,
+            onDelete: { meetingPendingDeletion = $0 }
         )
     }
 

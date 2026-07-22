@@ -5,15 +5,18 @@ public struct MeetingListView: View {
     public let state: MeetingListState
     public let onSelect: (UUID) -> Void
     public let onNewRecording: () -> Void
+    public let onDelete: (UUID) -> Void
 
     public init(
         state: MeetingListState,
         onSelect: @escaping (UUID) -> Void,
-        onNewRecording: @escaping () -> Void
+        onNewRecording: @escaping () -> Void,
+        onDelete: @escaping (UUID) -> Void
     ) {
         self.state = state
         self.onSelect = onSelect
         self.onNewRecording = onNewRecording
+        self.onDelete = onDelete
     }
 
     public var body: some View {
@@ -76,6 +79,11 @@ public struct MeetingListView: View {
                     )) { onSelect(item.id) }
                     .tag(item.id)
                     .padding(.vertical, MeetcoTheme.Spacing.small)
+                    .contextMenu {
+                        Button("Delete Meeting", systemImage: "trash", role: .destructive) {
+                            onDelete(item.id)
+                        }
+                    }
                 }
                 .listStyle(.inset)
                 .contentMargins(.top, MeetcoTheme.Spacing.xSmall, for: .scrollContent)
