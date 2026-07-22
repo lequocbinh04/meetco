@@ -96,10 +96,15 @@ public struct CopilotPanel: View {
             Text(message.role == .user ? "You" : MeetcoFormatting.provider(message.provider ?? provider))
                 .font(.meetcoMetadata)
                 .foregroundStyle(MeetcoTheme.textSecondary)
-            Text(message.content)
-                .font(.meetcoBody)
-                .textSelection(.enabled)
-            if let segmentID = message.evidenceSegmentIDs.first {
+            if message.role == .user {
+                Text(message.content)
+                    .font(.meetcoBody)
+                    .textSelection(.enabled)
+            } else {
+                EvidenceCitedText(message.content, onOpenEvidence: onOpenEvidence)
+            }
+            if ParsedCitations(message.content).citations.isEmpty,
+               let segmentID = message.evidenceSegmentIDs.first {
                 Button("Open transcript source", systemImage: "arrow.up.right") { onOpenEvidence(segmentID) }
                     .buttonStyle(.plain)
                     .font(.meetcoMetadata)
