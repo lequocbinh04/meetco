@@ -42,9 +42,11 @@ public struct RecordingControlBar: View {
     public var body: some View {
         ViewThatFits(in: .horizontal) {
             wideControls
-                .fixedSize(horizontal: true, vertical: false)
             compactControls
         }
+        // Fill the window edge to edge so the material band never floats
+        // as an island centered over the content.
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, MeetcoTheme.Spacing.large)
         .padding(.vertical, MeetcoTheme.Spacing.small)
         .frame(minHeight: 58)
