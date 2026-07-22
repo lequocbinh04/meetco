@@ -15,4 +15,16 @@ if let explicitPath {
     snapshotURL = try ApplicationPaths.live().liveSnapshotURL
 }
 
-StdioMCPServer(snapshotURL: snapshotURL).run()
+// `--http [port]` serves the Streamable HTTP endpoint instead of stdio.
+if let httpIndex = arguments.firstIndex(of: "--http") {
+    var port = MCPHTTPServer.defaultPort
+    if arguments.indices.contains(httpIndex + 1), let parsed = UInt16(arguments[httpIndex + 1]) {
+        port = parsed
+    }
+    let server = MCPHTTPServer(snapshotURL: snapshotURL, port: port)
+    try server.start()
+    FileHandle.standardError.write(Data("MeetcoMCP listening on \(server.endpointURL)\n".utf8))
+    dispatchMain()
+} else {
+    StdioMCPServer(snapshotURL: snapshotURL).run()
+}

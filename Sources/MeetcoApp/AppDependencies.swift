@@ -13,6 +13,7 @@ struct AppDependencies: Sendable {
     let agents: AgentService
     let snapshotExporter: SnapshotExporter
     let permissions: CapturePermissionService
+    let mcpHTTPServer: MCPHTTPServer
 
     static func live() throws -> AppDependencies {
         let paths = try ApplicationPaths.live()
@@ -36,6 +37,10 @@ struct AppDependencies: Sendable {
             ],
             repository: repository
         )
+        // Localhost-only MCP endpoint. It reads the snapshot file per request,
+        // so it exposes data only while an MCP-enabled snapshot is exported.
+        let mcpHTTPServer = MCPHTTPServer(snapshotURL: paths.liveSnapshotURL)
+        try? mcpHTTPServer.start()
         return AppDependencies(
             paths: paths,
             repository: repository,
@@ -46,7 +51,8 @@ struct AppDependencies: Sendable {
             batch: batch,
             agents: agents,
             snapshotExporter: SnapshotExporter(url: paths.liveSnapshotURL),
-            permissions: permissions
+            permissions: permissions,
+            mcpHTTPServer: mcpHTTPServer
         )
     }
 }

@@ -135,14 +135,19 @@ Deleting a meeting removes its entire directory. Export writes Markdown, JSON, o
 
 ## MCP integration
 
-Enable MCP in the recording preflight, then copy the ready-made configuration from *Settings → MCP*:
+While Meetco runs it hosts an MCP Streamable HTTP endpoint on loopback only. Enable MCP in the recording preflight, then paste the ready-made configuration from *Settings → MCP* into any MCP client:
 
-```bash
-"$PWD/dist/Meetco.app/Contents/Helpers/MeetcoMCP" \
-  --snapshot "$HOME/Library/Application Support/Meetco/Live/current-meeting.json"
+```json
+{
+  "mcpServers": {
+    "meetco": { "type": "http", "url": "http://127.0.0.1:46321/mcp" }
+  }
+}
 ```
 
-The server exposes snapshot, transcript search, segment lookup, and a summary resource. It has no write tools and receives no API key or audio path. Disabling MCP, deleting the meeting, or reaching a terminal failure state revokes the snapshot file.
+A stdio variant ships as `Meetco.app/Contents/Helpers/MeetcoMCP` (`--snapshot <path>`, or `--http <port>` to self-host the same endpoint without the app).
+
+The server exposes snapshot, transcript search, segment lookup, and a summary resource. It has no write tools and receives no API key or audio path. Disabling MCP, deleting the meeting, or reaching a terminal failure state revokes the snapshot file — the endpoint then answers every data call with an error until a new snapshot is exported.
 
 ## Verification status
 

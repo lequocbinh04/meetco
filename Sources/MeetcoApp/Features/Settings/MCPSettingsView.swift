@@ -38,7 +38,7 @@ public struct MCPSettingsView: View {
 
             SettingsPanel(
                 "Client configuration",
-                detail: "Use this local command in Claude, Codex, or another MCP client.",
+                detail: "Meetco hosts a local HTTP endpoint on 127.0.0.1 — paste this into Claude, Codex, or another MCP client.",
                 systemImage: "terminal"
             ) {
                 if state.configurationText.isEmpty {

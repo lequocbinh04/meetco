@@ -47,21 +47,22 @@ extension AppModel {
     }
 
     func runMCPDiagnostics() {
-        guard let executable = mcpExecutableURL,
-              let dependencies else { return }
+        guard let dependencies else { return }
         Task {
             do {
-                let request = #"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}"# + "\n"
-                let result = try await ProcessRunner().run(.init(
-                    executableURL: executable,
-                    arguments: ["--snapshot", dependencies.paths.liveSnapshotURL.path],
-                    standardInput: Data(request.utf8),
-                    workingDirectory: dependencies.paths.root,
-                    timeoutSeconds: 5
-                ))
-                guard result.exitCode == 0,
-                      let line = result.standardOutput.split(separator: 0x0A).first,
-                      let response = try? JSONDecoder().decode(MCPResponse.self, from: Data(line)),
+                // Exercise the same HTTP endpoint clients use.
+                var request = URLRequest(
+                    url: URL(string: dependencies.mcpHTTPServer.endpointURL)!
+                )
+                request.httpMethod = "POST"
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                request.httpBody = Data(
+                    #"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}"#.utf8
+                )
+                request.timeoutInterval = 5
+                let (data, urlResponse) = try await URLSession.shared.data(for: request)
+                guard (urlResponse as? HTTPURLResponse)?.statusCode == 200,
+                      let response = try? JSONDecoder().decode(MCPResponse.self, from: data),
                       response.error == nil else {
                     throw AgentProviderError.invalidResponse(
                         "MeetcoMCP did not complete its handshake."
@@ -69,7 +70,7 @@ extension AppModel {
                 }
                 mcpDiagnosticHealth = ProviderHealth(
                     state: .ready,
-                    detail: "Bundled server handshake passed"
+                    detail: "HTTP endpoint handshake passed"
                 )
             } catch {
                 mcpDiagnosticHealth = ProviderHealth(
@@ -81,14 +82,13 @@ extension AppModel {
     }
 
     var mcpConfigurationText: String {
-        let executable = mcpExecutableURL?.path ?? "MeetcoMCP"
-        let snapshot = dependencies?.paths.liveSnapshotURL.path
-            ?? "$HOME/Library/Application Support/Meetco/Live/current-meeting.json"
+        let endpoint = dependencies?.mcpHTTPServer.endpointURL
+            ?? "http://127.0.0.1:\(MCPHTTPServer.defaultPort)/mcp"
         let configuration: [String: Any] = [
             "mcpServers": [
                 "meetco": [
-                    "command": executable,
-                    "args": ["--snapshot", snapshot],
+                    "type": "http",
+                    "url": endpoint,
                 ],
             ],
         ]
@@ -99,15 +99,6 @@ extension AppModel {
         return String(decoding: data, as: UTF8.self)
     }
 
-    var mcpExecutableURL: URL? {
-        let bundled = Bundle.main.bundleURL
-            .appendingPathComponent("Contents", isDirectory: true)
-            .appendingPathComponent("Helpers", isDirectory: true)
-            .appendingPathComponent("MeetcoMCP", isDirectory: false)
-        if FileManager.default.isExecutableFile(atPath: bundled.path) { return bundled }
-        return Bundle.main.executableURL?.deletingLastPathComponent()
-            .appendingPathComponent("MeetcoMCP", isDirectory: false)
-    }
 
     func requestPermission(_ id: String) {
         guard let permissions = dependencies?.permissions else { return }

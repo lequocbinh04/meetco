@@ -8,10 +8,7 @@ extension MeetcoViewStateFactory {
         let snapshotExists = snapshot.map {
             FileManager.default.fileExists(atPath: $0.path)
         } ?? false
-        let mcpBinary = model.mcpExecutableURL
-        let mcpExists = mcpBinary.map {
-            FileManager.default.isExecutableFile(atPath: $0.path)
-        } ?? false
+        let mcpHosted = model.dependencies?.mcpHTTPServer != nil
 
         return SettingsViewState(
             connections: ConnectionsSettingsState(
@@ -36,10 +33,10 @@ extension MeetcoViewStateFactory {
             mcp: MCPSettingsState(
                 isEnabled: model.settings.defaultConfiguration.mcpEnabled,
                 health: model.mcpDiagnosticHealth ?? ProviderHealth(
-                    state: mcpExists ? .ready : .unavailable,
-                    detail: mcpExists
-                        ? "Read-only local server is available"
-                        : "MeetcoMCP is missing from the app bundle"
+                    state: mcpHosted ? .ready : .unavailable,
+                    detail: mcpHosted
+                        ? "Local HTTP endpoint is hosted while Meetco runs"
+                        : "Meetco storage is unavailable"
                 ),
                 configurationText: model.mcpConfigurationText,
                 snapshotDetail: snapshotExists
