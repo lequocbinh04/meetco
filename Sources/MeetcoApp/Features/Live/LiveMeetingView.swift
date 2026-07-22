@@ -57,14 +57,18 @@ public struct LiveMeetingView: View {
                 if proxy.size.width >= 1_040 {
                     HSplitView {
                         transcript
-                            .frame(minWidth: 560)
+                            .frame(minWidth: 560, maxWidth: .infinity, maxHeight: .infinity)
                         VSplitView {
                             PrivateNotesView(notes: state.privateNotes, onChange: onNotesChange)
                                 .frame(minHeight: 150)
                             copilot.frame(minHeight: 300)
                         }
                         .frame(minWidth: 330, idealWidth: 370, maxWidth: 440)
+                        .frame(maxHeight: .infinity)
                     }
+                    // Pin the split view to the proposed size; otherwise it sizes
+                    // to content and panes drift over each other as text streams in.
+                    .frame(width: proxy.size.width, height: proxy.size.height)
                 } else {
                     transcript
                         .inspector(isPresented: $showsCopilot) {

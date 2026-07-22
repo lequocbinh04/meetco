@@ -134,10 +134,33 @@ public struct ProcessRunner: Sendable {
         if let explicitPath, FileManager.default.isExecutableFile(atPath: explicitPath) {
             return URL(fileURLWithPath: explicitPath)
         }
-        let path = ProcessInfo.processInfo.environment["PATH"] ?? "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
-        return path.split(separator: ":").lazy
-            .map { URL(fileURLWithPath: String($0)).appendingPathComponent(name) }
+        let path = ProcessInfo.processInfo.environment["PATH"] ?? ""
+        // Finder-launched apps inherit launchd's minimal PATH, so always scan
+        // the locations CLI installers actually use in addition to $PATH.
+        let directories = path.split(separator: ":").map(String.init) + wellKnownBinaryDirectories()
+        return directories.lazy
+            .map { URL(fileURLWithPath: $0).appendingPathComponent(name) }
             .first { FileManager.default.isExecutableFile(atPath: $0.path) }
+    }
+
+    private static func wellKnownBinaryDirectories() -> [String] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        var directories = [
+            "/opt/homebrew/bin",
+            "/usr/local/bin",
+            "\(home)/.local/bin",
+            "\(home)/.bun/bin",
+            "\(home)/.npm-global/bin",
+            "\(home)/.volta/bin",
+            "\(home)/.asdf/shims",
+            "\(home)/bin",
+        ]
+        // nvm installs node (and npm globals) under versioned directories.
+        let nvmVersions = "\(home)/.nvm/versions/node"
+        if let versions = try? FileManager.default.contentsOfDirectory(atPath: nvmVersions) {
+            directories += versions.sorted(by: >).map { "\(nvmVersions)/\($0)/bin" }
+        }
+        return directories
     }
 
     public static func makeCleanWorkingDirectory() throws -> URL {
@@ -191,6 +214,12 @@ public struct ProcessRunner: Sendable {
         var clean = Dictionary(uniqueKeysWithValues: allowed.compactMap { key in
             current[key].map { (key, $0) }
         })
+        // CLIs are often `#!/usr/bin/env node` wrappers; extend the child PATH
+        // past launchd's minimal default so their interpreters resolve too.
+        let basePath = clean["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
+        let extended = basePath.split(separator: ":").map(String.init) + wellKnownBinaryDirectories()
+        var seen = Set<String>()
+        clean["PATH"] = extended.filter { seen.insert($0).inserted }.joined(separator: ":")
         clean.merge(overrides) { _, replacement in replacement }
         clean["NO_COLOR"] = "1"
         return clean

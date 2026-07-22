@@ -38,7 +38,9 @@ public actor URLSessionScribeRealtimeTransport: ScribeRealtimeTransport {
         guard let task else {
             throw TranscriptionFailure(kind: .transient, message: "Realtime connection is not open.")
         }
-        try await task.send(.data(data))
+        // Scribe expects JSON in websocket TEXT frames; binary frames make the
+        // server drop the connection after the first audio chunk.
+        try await task.send(.string(String(decoding: data, as: UTF8.self)))
     }
 
     public func receive() async throws -> ScribeRealtimeMessage {

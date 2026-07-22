@@ -34,7 +34,8 @@ public struct LiveWaveformView: View {
                         .frame(width: 2.5, height: barHeight(history[index]))
                 }
             }
-            .frame(height: 24)
+            // Fixed footprint keeps the control bar from re-laying out on every tick.
+            .frame(width: CGFloat(Self.capacity) * 4.5 - 2, height: 24)
             .animation(nil, value: history)
         }
         .onReceive(ticks) { _ in
