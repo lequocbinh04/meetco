@@ -1,3 +1,4 @@
+import MeetcoCapture
 import MeetcoCore
 import SwiftUI
 
@@ -6,6 +7,7 @@ public struct RecordingPreflightView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showsAdvanced = false
     @State private var meetingTitle = ""
+    @State private var inputDevices: [AudioInputDevice] = []
 
     public let state: RecordingPreflightState
     public let onConfigurationChange: (MeetingConfiguration) -> Void
@@ -92,6 +94,49 @@ public struct RecordingPreflightView: View {
                 detail: "Online captures system audio + mic. On-site uses the room microphone."
             )
             captureModes
+            microphonePicker
+        }
+    }
+
+    private var microphonePicker: some View {
+        HStack(spacing: MeetcoTheme.Spacing.medium) {
+            Label("Microphone", systemImage: "mic")
+                .font(.meetcoBody)
+            Spacer()
+            Picker("Microphone", selection: microphoneSelection) {
+                Text("System default").tag(String?.none)
+                ForEach(inputDevices) { device in
+                    Text(device.name).tag(String?.some(device.uid))
+                }
+            }
+            .labelsHidden()
+            .frame(maxWidth: 340)
+        }
+        .padding(.horizontal, MeetcoTheme.Spacing.large)
+        .padding(.vertical, MeetcoTheme.Spacing.medium)
+        .background(MeetcoTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: MeetcoTheme.Radius.card, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: MeetcoTheme.Radius.card, style: .continuous)
+                .stroke(MeetcoTheme.border)
+        }
+        .onAppear(perform: refreshInputDevices)
+    }
+
+    private var microphoneSelection: Binding<String?> {
+        Binding(
+            get: { state.configuration.microphoneDeviceUID },
+            set: { uid in update { $0.microphoneDeviceUID = uid } }
+        )
+    }
+
+    // Loads the current input devices; a remembered device that is no longer
+    // attached falls back to the system default so recording never blocks.
+    private func refreshInputDevices() {
+        inputDevices = AudioInputDeviceCatalog.inputDevices()
+        if let configured = state.configuration.microphoneDeviceUID,
+           !inputDevices.contains(where: { $0.uid == configured }) {
+            update { $0.microphoneDeviceUID = nil }
         }
     }
 

@@ -5,15 +5,18 @@ import MeetcoCore
 public final class MicrophoneCaptureSource: @unchecked Sendable {
     private let engine = AVAudioEngine()
     private let handler: CaptureBufferHandler
+    private let deviceUID: String?
     private var isRunning = false
 
-    public init(handler: @escaping CaptureBufferHandler) {
+    public init(handler: @escaping CaptureBufferHandler, deviceUID: String? = nil) {
         self.handler = handler
+        self.deviceUID = deviceUID
     }
 
     public func start() throws {
         guard !isRunning else { return }
         let input = engine.inputNode
+        selectConfiguredDeviceIfAvailable(on: input)
         let format = input.inputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else {
             throw AudioCaptureError.inputUnavailable
@@ -55,5 +58,24 @@ public final class MicrophoneCaptureSource: @unchecked Sendable {
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
         isRunning = false
+    }
+
+    /// Points the input node at the configured microphone. Falls back to the
+    /// system default silently when the device is gone (e.g. unplugged) so a
+    /// stale preference never blocks a recording.
+    private func selectConfiguredDeviceIfAvailable(on input: AVAudioInputNode) {
+        guard let deviceUID,
+              var deviceID = AudioInputDeviceCatalog.deviceID(forUID: deviceUID),
+              let audioUnit = input.audioUnit else {
+            return
+        }
+        AudioUnitSetProperty(
+            audioUnit,
+            kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global,
+            0,
+            &deviceID,
+            UInt32(MemoryLayout<AudioDeviceID>.size)
+        )
     }
 }

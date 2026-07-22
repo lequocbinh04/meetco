@@ -58,7 +58,8 @@ final class MeetingSessionCoordinator: ObservableObject {
             try await dependencies.capture.start(
                 meetingID: meeting.id,
                 mode: configuration.captureMode,
-                audioDirectory: dependencies.paths.audioDirectory(id: meeting.id)
+                audioDirectory: dependencies.paths.audioDirectory(id: meeting.id),
+                microphoneDeviceUID: configuration.microphoneDeviceUID
             )
             meeting.status = .recording
             meeting.startedAt = Date()

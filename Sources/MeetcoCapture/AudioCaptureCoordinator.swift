@@ -31,7 +31,12 @@ public actor AudioCaptureCoordinator {
         }
     }
 
-    public func start(meetingID: UUID, mode: CaptureMode, audioDirectory: URL) async throws {
+    public func start(
+        meetingID: UUID,
+        mode: CaptureMode,
+        audioDirectory: URL,
+        microphoneDeviceUID: String? = nil
+    ) async throws {
         if case .failed = state {
             await discardFailedResources()
         }
@@ -65,7 +70,7 @@ public actor AudioCaptureCoordinator {
         let handler: CaptureBufferHandler = { result in
             Task { await self.ingest(result) }
         }
-        let microphone = MicrophoneCaptureSource(handler: handler)
+        let microphone = MicrophoneCaptureSource(handler: handler, deviceUID: microphoneDeviceUID)
         let systemAudio = mode == .online ? SystemAudioCaptureSource(handler: handler) : nil
 
         self.archiveWriter = archive

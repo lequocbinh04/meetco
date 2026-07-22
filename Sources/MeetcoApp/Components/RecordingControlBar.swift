@@ -95,9 +95,19 @@ public struct RecordingControlBar: View {
 
     private var meters: some View {
         HStack(spacing: MeetcoTheme.Spacing.large) {
-            AudioMeterView(label: "Microphone", level: state.microphoneLevel, systemImage: "mic.fill")
+            LiveWaveformView(
+                label: "Microphone",
+                level: state.microphoneLevel,
+                systemImage: "mic.fill",
+                isActive: state.status == .recording
+            )
             if let level = state.systemLevel {
-                AudioMeterView(label: "System", level: level, systemImage: "speaker.wave.2.fill")
+                LiveWaveformView(
+                    label: "System",
+                    level: level,
+                    systemImage: "speaker.wave.2.fill",
+                    isActive: state.status == .recording
+                )
             }
         }
     }

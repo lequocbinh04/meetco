@@ -62,6 +62,8 @@ public struct MeetingConfiguration: Codable, Equatable, Sendable {
     public var languageCode: String?
     public var keyterms: [String]
     public var polishWithBatchAfterRealtime: Bool
+    /// CoreAudio device UID of the chosen microphone; nil follows the system default input.
+    public var microphoneDeviceUID: String?
 
     public init(
         captureMode: CaptureMode = .online,
@@ -72,7 +74,8 @@ public struct MeetingConfiguration: Codable, Equatable, Sendable {
         mcpEnabled: Bool = false,
         languageCode: String? = nil,
         keyterms: [String] = [],
-        polishWithBatchAfterRealtime: Bool = true
+        polishWithBatchAfterRealtime: Bool = true,
+        microphoneDeviceUID: String? = nil
     ) {
         self.captureMode = captureMode
         self.transcriptionMode = transcriptionMode
@@ -83,6 +86,7 @@ public struct MeetingConfiguration: Codable, Equatable, Sendable {
         self.languageCode = languageCode
         self.keyterms = Array(keyterms.prefix(50))
         self.polishWithBatchAfterRealtime = polishWithBatchAfterRealtime
+        self.microphoneDeviceUID = microphoneDeviceUID
     }
 
     public func normalizedForSession() -> MeetingConfiguration {
