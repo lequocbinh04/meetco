@@ -17,6 +17,7 @@
   <img src="https://img.shields.io/badge/build-SwiftPM-brightgreen" alt="SwiftPM" />
   <img src="https://img.shields.io/badge/storage-local--first-6E62E5" alt="Local-first" />
   <img src="https://img.shields.io/badge/account-not%20required-2ea44f" alt="No account required" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License" /></a>
 </p>
 
 <p align="center">
