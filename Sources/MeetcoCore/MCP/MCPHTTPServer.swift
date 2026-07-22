@@ -69,31 +69,59 @@ public final class MCPHTTPServer: @unchecked Sendable {
     }
 
     private func respond(to request: HTTPRequest, on connection: NWConnection) {
+        // Browser clients (e.g. MCP Inspector) need CORS. Only local origins
+        // are allowed so arbitrary websites cannot read the meeting snapshot.
+        let cors = Self.corsHeaders(for: request)
         let response: Data
         switch (request.method, request.path) {
+        case ("OPTIONS", "/mcp"):
+            response = Self.httpResponse(status: "204 No Content", body: Data(), extraHeaders: cors)
         case ("POST", "/mcp"):
             if let payload = handler.handle(message: String(decoding: request.body, as: UTF8.self)) {
-                response = Self.httpResponse(status: "200 OK", body: payload)
+                response = Self.httpResponse(status: "200 OK", body: payload, extraHeaders: cors)
             } else {
-                response = Self.httpResponse(status: "202 Accepted", body: Data())
+                response = Self.httpResponse(status: "202 Accepted", body: Data(), extraHeaders: cors)
             }
         case ("GET", "/mcp"):
             // No server-initiated stream is offered; clients fall back to plain POSTs.
-            response = Self.httpResponse(status: "405 Method Not Allowed", body: Data())
+            response = Self.httpResponse(status: "405 Method Not Allowed", body: Data(), extraHeaders: cors)
         case ("DELETE", "/mcp"):
-            response = Self.httpResponse(status: "200 OK", body: Data())
+            response = Self.httpResponse(status: "200 OK", body: Data(), extraHeaders: cors)
         default:
-            response = Self.httpResponse(status: "404 Not Found", body: Data())
+            response = Self.httpResponse(status: "404 Not Found", body: Data(), extraHeaders: cors)
         }
         connection.send(content: response, completion: .contentProcessed { _ in
             connection.cancel()
         })
     }
 
-    private static func httpResponse(status: String, body: Data) -> Data {
+    private static func corsHeaders(for request: HTTPRequest) -> [String] {
+        guard let origin = request.origin,
+              let host = URL(string: origin)?.host,
+              host == "localhost" || host == "127.0.0.1" || host == "::1" else {
+            return []
+        }
+        return [
+            "Access-Control-Allow-Origin: \(origin)",
+            "Access-Control-Allow-Methods: POST, GET, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers: Content-Type, Authorization, Mcp-Session-Id, Mcp-Protocol-Version, Last-Event-Id",
+            "Access-Control-Expose-Headers: Mcp-Session-Id",
+            "Access-Control-Max-Age: 3600",
+            "Vary: Origin",
+        ]
+    }
+
+    private static func httpResponse(
+        status: String,
+        body: Data,
+        extraHeaders: [String] = []
+    ) -> Data {
         var head = "HTTP/1.1 \(status)\r\n"
         head += "Content-Type: application/json\r\n"
         head += "Content-Length: \(body.count)\r\n"
+        for header in extraHeaders {
+            head += "\(header)\r\n"
+        }
         head += "Connection: close\r\n\r\n"
         return Data(head.utf8) + body
     }
@@ -104,6 +132,7 @@ private struct HTTPRequest {
     let method: String
     let path: String
     let body: Data
+    let origin: String?
 
     init?(parsing data: Data) {
         guard let headerEnd = data.range(of: Data("\r\n\r\n".utf8)) else { return nil }
@@ -114,14 +143,19 @@ private struct HTTPRequest {
         guard parts.count >= 2 else { return nil }
 
         var contentLength = 0
+        var origin: String?
         for line in lines.dropFirst() {
             let pair = line.split(separator: ":", maxSplits: 1)
-            guard pair.count == 2,
-                  pair[0].trimmingCharacters(in: .whitespaces).lowercased() == "content-length" else {
-                continue
+            guard pair.count == 2 else { continue }
+            let name = pair[0].trimmingCharacters(in: .whitespaces).lowercased()
+            let value = pair[1].trimmingCharacters(in: .whitespaces)
+            switch name {
+            case "content-length": contentLength = Int(value) ?? 0
+            case "origin": origin = value
+            default: break
             }
-            contentLength = Int(pair[1].trimmingCharacters(in: .whitespaces)) ?? 0
         }
+        self.origin = origin
 
         let bodyStart = headerEnd.upperBound
         guard data.count - bodyStart >= contentLength else { return nil }
