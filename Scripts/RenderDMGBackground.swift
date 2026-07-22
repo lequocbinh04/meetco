@@ -48,13 +48,17 @@ func render(scale: CGFloat) -> NSBitmapImageRep {
             options: []
         )
 
-    // Icon wells: soft rings that frame the app icon and the Applications drop.
+    // Icon wells: rounded squares that echo the macOS app-icon squircle shape.
     for center in [appWellCenter, dropWellCenter] {
         let wellRect = NSRect(
             x: center.x - wellRadius, y: center.y - wellRadius,
             width: wellRadius * 2, height: wellRadius * 2
         )
-        let well = NSBezierPath(ovalIn: wellRect)
+        let well = NSBezierPath(
+            roundedRect: wellRect,
+            xRadius: wellRadius * 0.45,
+            yRadius: wellRadius * 0.45
+        )
         color(0xFFFFFF, 0.035).setFill()
         well.fill()
         color(0xFFFFFF, 0.10).setStroke()
